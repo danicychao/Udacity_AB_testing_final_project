@@ -1,16 +1,28 @@
-N_view <- 40000
-N_click <- 3200
-CTP <- N_click/N_view
-CTP_sd <- sqrt(CTP*(1-CTP)/N_view)
-N_enrollment <- 660
-Prob_pay <- 0.53
-Pay_sd <- sqrt(Prob_pay*(1-Prob_pay)/N_enrollment)
-Gr_convert <- N_enrollment/N_click
-Gr_convert_sd <- sqrt(Gr_convert*(1-Gr_convert)/N_click)
-Net_convert <- 0.1093125
-Net_convert_sd <- sqrt(Net_convert*(1-Net_convert)/N_click)
+# --------------------------------------------------------
+# AB Testing Script
+#
+# Purpose:
+#   This script analyzes an A/B testing experiment,
+#   covering from launch preparation to result analysis.
+#   It includes:
+#     - baseline metric calculations
+#     - sample size estimation
+#     - sanity checks
+#     - hypothesis testing functions
+# 
+# Input data:
+#   - Final_Project_Results_Control.csv
+#   - Final_Project_Results_Experiment.csv
+#   - Final_Project_Baseline_Values.csv
+# --------------------------------------------------------
 
+# ---- Load libraries ----
 library(pwr)
+library(here)
+
+# ---- Define functions ----
+
+### Estimate sample size
 AB_sample_size <- function(base, d_min, sig_level, stat_power){
   variant <- base + d_min
   es <- ES.h(base, variant)
@@ -18,151 +30,192 @@ AB_sample_size <- function(base, d_min, sig_level, stat_power){
   return(sample_size)
 }
 
-AB_sample_size(Prob_pay, 0.01, 0.05, 0.8)
-AB_sample_size(Gr_convert, -0.01, 0.05, 0.8)
-AB_sample_size(Net_convert, 0.0075, 0.05, 0.8)
-
-control_group <- read.csv("/Users/danichao/Documents/AB_testing/Final Project Results - Control.csv")
-control_pageviews <- control_group$Pageviews[1:23]
-control_pageviews_total <- sum(control_pageviews)
-control_clicks <- control_group$Clicks[1:23]
-control_clicks_total <- sum(control_clicks)
-control_CTR <- control_clicks_total/control_pageviews_total
-control_enroll <- control_group$Enrollments[1:23]
-control_enroll_total <- sum(control_enroll)
-control_pay <- control_group$Payments[1:23]
-control_pay_total <- sum(control_pay)
-control_Gr <- control_enroll_total/control_clicks_total
-control_Gr_sd <- sqrt(control_Gr*(1-control_Gr)/control_clicks_total)
-control_Net_convert <- control_pay_total/control_clicks_total
-
-experiment_group <- read.csv("/Users/danichao/Documents/AB_testing/Final Project Results - Experiment.csv")
-experiment_pageviews <- experiment_group$Pageviews[1:23]
-experiment_pageviews_total <- sum(experiment_pageviews)
-experiment_clicks <- experiment_group$Clicks[1:23]
-experiment_clicks_total <- sum(experiment_clicks)
-experiment_CTR <- experiment_clicks_total/experiment_pageviews_total
-experiment_enroll <- experiment_group$Enrollments[1:23]
-experiment_enroll_total <- sum(experiment_enroll)
-experiment_pay <- experiment_group$Payments[1:23]
-experiment_pay_total <- sum(experiment_pay)
-experiment_Gr <- control_enroll_total/control_clicks_total
-experiment_Gr_sd <- sqrt(experiment_Gr*(1-experiment_Gr)/experiment_clicks_total)
-experiment_Net_convert <- experiment_pay_total/experiment_clicks_total
-
-Pageview_invariant_check <- function(control, experiment){
-  metric = experiment/(control+experiment)
-  l_bound <- 0.5-1.96*sqrt(0.5*0.5/(control+experiment))
-  u_bound <- 0.5+1.96*sqrt(0.5*0.5/(control+experiment))
+### Read control/experiment group data
+group_sample <- function(df) {
+  pageviews <- df$Pageviews[1:23]
+  clicks <- df$Clicks[1:23]
+  enrollments <- df$Enrollments[1:23]
+  payments <- df$Payments[1:23]
   
-  if (metric < l_bound){
-    print("Check before proceed!")
-  }
-  else if (metric > u_bound){
-    print("Check before proceed!")
-  }
+  pageviews_total <- sum(pageviews)
+  clicks_total <- sum(clicks)
+  enrollments_total <- sum(enrollments)
+  payments_total <- sum(payments)
+  
+  list(
+    pageviews = pageviews,
+    pageviews_total = pageviews_total,
+    clicks = clicks,
+    clicks_total = clicks_total,
+    enrollments = enrollments,
+    enrollments_total = enrollments_total,
+    payments = payments,
+    payments_total = payments_total,
+    ctr = clicks_total / pageviews_total,
+    gross_conversion = enrollments_total / clicks_total,
+    net_conversion = payments_total / clicks_total
+  )
+}
+
+### Check if samples are evenly split between control and experiment groups
+Bernoulli_invariant_check <- function(control, experiment, zscore = 1.96){
+  total <- control + experiment
+  metric = experiment / total
+  se <- sqrt(0.5*0.5/total)
+  l_bound <- 0.5 - zscore*se
+  u_bound <- 0.5 + zscore*se
+  
+  decision <- if (metric < l_bound || metric > u_bound) {
+    "Check before proceeding!"
+  } 
   else {
     "You can proceed."
   }
+  
+  return (list(
+    decision = decision,
+    metric = metric,
+    confidence_interval = c(l_bound, u_bound)
+  ))
 }
 
-Pageview_invariant_check(control_pageviews_total, experiment_pageviews_total)
-
-CTR_invariant_check <- function(control_x, experiment_x, control_n, experiment_n){
+### Check if rates are equivalent between control and experiment groups
+rate_invariant_check <- function(control_x, experiment_x, control_n, experiment_n, zscore = 1.96){
   mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
   sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
   
   mean_diff <-  experiment_x/experiment_n - control_x/control_n
   
-  l_bound <- -1.96*sd_pool
-  u_bound <- 1.96*sd_pool
+  l_bound <- -zscore*sd_pool
+  u_bound <- zscore*sd_pool
   
-  if (mean_diff < l_bound){
-    sprintf("CTR is not even! Check your CTR!")
-  }
-  else if (mean_diff > u_bound){
-    sprintf("CTR is not even! Check your CTR!")
+  decision <- if (mean_diff < l_bound || mean_diff > u_bound){
+    "Check your experiment setups!"
   }
   else {
     "You can proceed."
   }
+  
+  return (list(
+    decision = decision,
+    metric = mean_diff,
+    confidence_interval = c(l_bound, u_bound)
+  ))
 }
 
-CTR_invariant_check(N_click, control_clicks_total, N_view, control_pageviews_total)
-CTR_invariant_check(N_click, experiment_clicks_total, N_view, experiment_pageviews_total)
-CTR_invariant_check(control_clicks_total, experiment_clicks_total, control_pageviews_total, experiment_pageviews_total)
-
+### Test hypothesis
 AB_test <- function(control_x, experiment_x, control_n, experiment_n, diff_prac, z_score){
   mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
   sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
   
   mean_diff <- experiment_x/experiment_n - control_x/control_n
   
-  l_bound <- mean_diff - z_score*sd_pool
-  u_bound <- mean_diff + z_score*sd_pool
-  print(c(l_bound, u_bound))
+  l_bound <- mean_diff - z_score * sd_pool
+  u_bound <- mean_diff + z_score * sd_pool
   
-  if (l_bound > 0){
-    if (diff_prac < l_bound){
-      sprintf("The Exp. rate is higher for the business.")
+  result <- if (l_bound > 0){
+    if (abs(diff_prac) < l_bound){
+      "The Exp. rate is higher for the business."
     }
     else {
-      sprintf("The Exp. rate is statistically higher, but there is no difference for the business.")
+      "The Exp. rate is statistically higher, but there is no difference for the business."
     }
   }
   else if (u_bound < 0){
-    if (diff_prac > u_bound){
-      sprintf("The Exp. rate is lower for the business.")
+    if (diff_prac < abs(u_bound)){
+      "The Exp. rate is lower for the business."
     }
     else {
-      sprintf("The Exp. rate is statistically lower, but there is no difference for the business.")
+      "The Exp. rate is statistically lower, but there is no difference for the business."
     }
   }
   else {
     "There is no statistical difference between Con. and Exp.."
   }
   
+  return(list(
+    mean_diff           = mean_diff,
+    confidence_interval = c(l_bound, u_bound),
+    practical_diff      = abs(diff_prac),
+    result            = result
+  ))
 }
-AB_test(control_enroll_total, experiment_enroll_total, control_clicks_total, experiment_clicks_total, -0.01, 1.96)
-AB_test(control_pay_total, experiment_pay_total, control_clicks_total, experiment_clicks_total, 0.0075, 1.96)
 
-TheAB_test_alt <- function(control_x, experiment_x, control_n, experiment_n, diff_prac, z_score){
-  mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
-  sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
+### Sign test
+sign_test <- function(control_x, experiment_x, control_n, experiment_n){
+  control_days <- control_x/control_n
+  experiment_days <- experiment_x/experiment_n
+  days_total <- length(control_days)
   
-  mean_diff <- experiment_x/experiment_n - control_x/control_n
+  ratio_diff <- sum(experiment_days > control_days)/days_total
+  ratio_sd <- sqrt(ratio_diff*(1-ratio_diff)/days_total)
   
-  l_bound <- - z_score*sd_pool
-  u_bound <-   z_score*sd_pool
-  print(c(l_bound, u_bound))
+  test_statistics <- abs(ratio_diff - 0.5)/sqrt(ratio_diff * (1 - ratio_diff) / days_total)
+  p_value <- 2*(1-pnorm(test_statistics))
   
-  if (mean_diff < l_bound){
-    if (mean_diff < diff_prac){
-      sprintf("The Exp. rate is lower for the business.")
+  result <- if (p_value < 0.05){
+    if (ratio_diff > 0.5){
+      "The Exp. rate is higher in sign test."
+    }
+    else {
+      "The Exp. rate is lower in sign test."
+    }
   }
-    else {
-      sprintf("The Exp. rate is statistically lower, but there is no difference for the business.")
-    }
-  }  
-  else if (mean_diff > u_bound){
-    if (mean_diff > diff_prac){
-      sprintf("The Exp. rate is higher for the business.")
-    }
-    else {
-      sprintf("The Exp. rate is statistically higher, but there is no difference for the business.")
-    }
-  }  
   else {
-    "There is no statistical difference."
+    "No difference between Con. and Exp. in sign test."
   }
+
+  return(list(
+    ratio_diff           = ratio_diff,
+    test_statistics      = test_statistics,
+    p_value              = p_value,
+    result               = result
+  ))
 }
-  
-control_gc_days <- control_enroll/control_clicks
-experiment_gc_days <- experiment_enroll/experiment_clicks
 
-control_pay_days <- control_pay/control_clicks
-experiment_pay_days <- experiment_pay/experiment_clicks
+# ---- Start execution ----
 
-ratio_diff <- sum(control_gc_days > experiment_gc_days)/length(control_gc_days)
-ratio_sd <- sqrt(ratio_diff*(1-ratio_diff)/length(control_gc_days))
-ratio_diff-1.96*ratio_sd
+# ---- Calculate baseline metric ----
+# ---- Baseline values from Final_Project_Baseline_Values.csv ----
+baseline_views <- 40000
+baseline_clicks <- 3200
+baseline_CTP <- baseline_clicks/baseline_views
+baseline_CTP_sd <- sqrt(baseline_CTP*(1-baseline_CTP)/baseline_views)
+baseline_enrollment <- 660
+baseline_pay_prob <- 0.53
+baseline_pay_prob_sd <- sqrt(baseline_pay_prob*(1-baseline_pay_prob)/baseline_enrollment)
+baseline_gross_conversion <- baseline_enrollment/baseline_clicks
+baseline_gross_conversion_sd <- sqrt(baseline_gross_conversion*(1-baseline_gross_conversion)/baseline_clicks)
+baseline_net_conversion <- 0.1093125
+baseline_net_conversion_sd <- sqrt(baseline_net_conversion*(1-baseline_net_conversion)/baseline_clicks)
+
+# ---- Estimate required sample size ----
+AB_sample_size(baseline_pay_prob, 0.01, 0.05, 0.8) # Required "enrollments"
+AB_sample_size(baseline_gross_conversion, 0.01, 0.05, 0.8) # Required pageviews
+AB_sample_size(baseline_net_conversion, 0.0075, 0.05, 0.8) # Required pageviews
+
+# ---- Load control/experiment data ----
+control_group <- group_sample(read.csv(here("Final_Project_Results_Control.csv")))
+experiment_group <- group_sample(read.csv(here("Final_Project_Results_Experiment.csv")))
+
+# ---- Sanity checks of pageviews and click-through-rate ----
+Bernoulli_invariant_check(control_group$pageviews_total, experiment_group$pageviews_total) # Check pageview
+rate_invariant_check(control_group$clicks_total, experiment_group$clicks_total, control_group$pageviews_total, experiment_group$pageviews_total) # Check CTR
+
+### Extra sanity checks with baseline values
+rate_invariant_check(baseline_clicks, control_group$clicks_total, baseline_views, control_group$pageviews_total) 
+rate_invariant_check(baseline_clicks, experiment_group$clicks_total, baseline_views, experiment_group$pageviews_total) 
+
+
+# ---- Hypothesis testing ----
+
+### Effect size test
+AB_test(control_group$enrollments_total, experiment_group$enrollments_total, control_group$clicks_total, experiment_group$clicks_total, -0.01, 1.96)
+AB_test(control_group$payments_total, experiment_group$payments_total, control_group$clicks_total, experiment_group$clicks_total, 0.0075, 1.96)
+
+### Sign test
+sign_test(control_group$enrollments, experiment_group$enrollments, control_group$clicks, experiment_group$clicks)
+sign_test(control_group$payments, experiment_group$payments, control_group$clicks, experiment_group$clicks)
+
+
+
