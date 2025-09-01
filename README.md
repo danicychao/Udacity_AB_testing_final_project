@@ -31,5 +31,19 @@ Refer to [here](https://docs.google.com/document/u/1/d/1aCquhIqsUApgsxQ8-SQBAigF
   Udacity loses opportunity to make profits from those students. Udacity should also have strategies to encourage students stay on track and finish courses.
 
 ## R script usage
-  
+
+- Clone the repo using the SSH link, and open the repo directory in RStudio by "Open Project" in File.
+
+  ```bash
+  git clone git@github.com:danicychao/Udacity_AB_testing_final_project.git
+  ```
+
+- In RStudio console, install packages.
+
+  ```R
+  install.packages("pwr")
+  install.packages("here")
+  ```
+
+- 
 
