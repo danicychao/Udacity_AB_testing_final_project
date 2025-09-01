@@ -17,7 +17,8 @@ Refer to [here](https://docs.google.com/document/u/1/d/1aCquhIqsUApgsxQ8-SQBAigF
 
 - Unlike the Bonferroni test, we want both the hypothesis tests on gross conversion and net conversion to pass. In other words, the Bonferroni is an "OR" condition, but our scenario here is an "AND" condition.
 
-- 
+- I use the default `ES.h` function and `pwr.2p.test` function in `pwr` package in R to estimate required sample size for sufficient statistica power,
+  and the estimated sample size is slightly different from the estimate of the famous [Evan Miller's A/B test sample size calculator](https://www.evanmiller.org/ab-testing/sample-size.html). The difference mainly results from  
 
 
 ## Summary
