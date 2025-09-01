@@ -17,13 +17,19 @@ Refer to [here](https://docs.google.com/document/u/1/d/1aCquhIqsUApgsxQ8-SQBAigF
 
 - Unlike the Bonferroni test, we want both the hypothesis tests on gross conversion and net conversion to pass. In other words, the Bonferroni is an "OR" condition, but our scenario here is an "AND" condition.
 
-- I use the default `ES.h` function and `pwr.2p.test` function from the `pwr` package in R to estimate required sample size for sufficient statistica power. The estimated sample size is slightly different from the estimate of the famous [Evan Miller's A/B test sample size calculator](https://www.evanmiller.org/ab-testing/sample-size.html). The discrepancy mainly results from the different methods estimating the variance of control and experiment groups, which are both unknown. In this project, difference is around 1-2% in the sample size, practically neglectable.
+- I use the default `ES.h` function and `pwr.2p.test` function from the `pwr` package in R to estimate required sample size for sufficient statistica power. The estimated sample size is slightly different from the estimate of the famous [Evan Miller's A/B test sample size calculator](https://www.evanmiller.org/ab-testing/sample-size.html). The discrepancy mainly results from the different methods estimating the variance of control and experiment groups, which are both unknown. In this project, difference is around 1-2% in the sample size, practically negligible.
 
 ## Summary
 
 - The A/B testing experiment setups are equivalent between the control and experiment groups.
 
-- The hypothesis tests on gross conversion and net conversion indicate that the free trial screener reduces the number of frustrated students
-  without significantly reducing the number of students making payments and completing courses, but we still have not yet collected enought page views
+- The hypothesis tests on gross conversion and net conversion indicate that the free trial screener is likely to improve student experience,
+  but we have not yet collected enough page views to achieve sufficient statistical power.
+
+- The free trial screener is actually a passive way to improve overall student experience. For students with higher probability to drop out,
+  the free trial screener just triggers their bailing out at an earlier stage, so they will not be frustrated at the end.
+  Udacity loses opportunity to make profits from those students. Udacity should also have strategies to encourage students stay on track and finish courses.
+
+## R script usage
   
 
