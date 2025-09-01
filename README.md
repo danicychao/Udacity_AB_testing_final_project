@@ -21,4 +21,9 @@ Refer to [here](https://docs.google.com/document/u/1/d/1aCquhIqsUApgsxQ8-SQBAigF
 
 ## Summary
 
+- The A/B testing experiment setups are equivalent between the control and experiment groups.
+
+- The hypothesis tests on gross conversion and net conversion indicate that the free trial screener reduces the number of frustrated students
+  without significantly reducing the number of students making payments and completing courses, but we still have not yet collected enought page views
+  
 
