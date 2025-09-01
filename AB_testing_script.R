@@ -103,7 +103,7 @@ rate_invariant_check <- function(control_x, experiment_x, control_n, experiment_
   ))
 }
 
-### Test hypothesis
+### Test hypothesis function
 AB_test <- function(control_x, experiment_x, control_n, experiment_n, diff_prac, z_score){
   mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
   sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
@@ -141,7 +141,7 @@ AB_test <- function(control_x, experiment_x, control_n, experiment_n, diff_prac,
   ))
 }
 
-### Sign test
+### Sign test function
 sign_test <- function(control_x, experiment_x, control_n, experiment_n){
   control_days <- control_x/control_n
   experiment_days <- experiment_x/experiment_n
@@ -200,7 +200,8 @@ experiment_group <- group_sample(read.csv(here("Final_Project_Results_Experiment
 
 # ---- Sanity checks of pageviews and click-through-rate ----
 Bernoulli_invariant_check(control_group$pageviews_total, experiment_group$pageviews_total) # Check pageview
-rate_invariant_check(control_group$clicks_total, experiment_group$clicks_total, control_group$pageviews_total, experiment_group$pageviews_total) # Check CTR
+rate_invariant_check(control_group$clicks_total, experiment_group$clicks_total, 
+                     control_group$pageviews_total, experiment_group$pageviews_total) # Check CTR
 
 ### Extra sanity checks with baseline values
 rate_invariant_check(baseline_clicks, control_group$clicks_total, baseline_views, control_group$pageviews_total) 
@@ -210,8 +211,15 @@ rate_invariant_check(baseline_clicks, experiment_group$clicks_total, baseline_vi
 # ---- Hypothesis testing ----
 
 ### Effect size test
-AB_test(control_group$enrollments_total, experiment_group$enrollments_total, control_group$clicks_total, experiment_group$clicks_total, -0.01, 1.96)
-AB_test(control_group$payments_total, experiment_group$payments_total, control_group$clicks_total, experiment_group$clicks_total, 0.0075, 1.96)
+### zscore = 1.96 for 5% confindence level
+
+### practical difference, d_min=0.01, for gross conversion
+AB_test(control_group$enrollments_total, experiment_group$enrollments_total, 
+        control_group$clicks_total, experiment_group$clicks_total, -0.01, 1.96) 
+
+### practical difference, d_min=0.0075, for net conversion
+AB_test(control_group$payments_total, experiment_group$payments_total, 
+        control_group$clicks_total, experiment_group$clicks_total, 0.0075, 1.96)
 
 ### Sign test
 sign_test(control_group$enrollments, experiment_group$enrollments, control_group$clicks, experiment_group$clicks)
