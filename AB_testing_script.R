@@ -51,9 +51,6 @@ group_sample <- function(df) {
     enrollments_total = enrollments_total,
     payments = payments,
     payments_total = payments_total
-    #ctr = clicks_total / pageviews_total,
-    #gross_conversion = enrollments_total / clicks_total,
-    #net_conversion = payments_total / clicks_total
   )
 }
 
