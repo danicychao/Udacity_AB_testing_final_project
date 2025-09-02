@@ -22,7 +22,14 @@ library(here)
 
 # ---- Define functions ----
 
-### Estimate sample size
+#' Estimate sample size
+#' 
+#' @param base Baseline conversion rate
+#' @param d_min Minimum meaningful change
+#' @param sig_level Significance level
+#' @param stat_power The sensitivity
+#' 
+#' @return Required sample size per variation (e.g., experiment group)
 AB_sample_size <- function(base, d_min, sig_level, stat_power){
   variant <- base + d_min
   es <- ES.h(base, variant)
@@ -30,7 +37,9 @@ AB_sample_size <- function(base, d_min, sig_level, stat_power){
   return(sample_size)
 }
 
-### Read control/experiment group data
+#' Read control/experiment group data
+#' 
+#' @param df Data frame of control/experiment group data
 group_sample <- function(df) {
   pageviews <- df$Pageviews[1:23]
   clicks <- df$Clicks[1:23]
@@ -54,7 +63,13 @@ group_sample <- function(df) {
   )
 }
 
-### Check if samples are evenly split between control and experiment groups
+#' Check if samples are evenly split between control and experiment groups
+#' 
+#' @param control Number of samples in control group
+#' @param experiment Number of samples in experiment group
+#' @param zscore z-score corresponding to desired confidence level (default = 1.96 for 95% CL)
+#' 
+#' @return List of even splitting check result, observed metric, and confidence interval
 Bernoulli_invariant_check <- function(control, experiment, zscore = 1.96){
   total <- control + experiment
   metric = experiment / total
@@ -76,7 +91,15 @@ Bernoulli_invariant_check <- function(control, experiment, zscore = 1.96){
   ))
 }
 
-### Check if rates are equivalent between control and experiment groups
+#' Check if rates are equivalent between control and experiment groups
+#' 
+#' @param control_x Number of conversions in control group (e.g. clicks, enrollments, payments)
+#' @param experiment_x Number of conversions in experiment group
+#' @param control_n Number of samples in control group (e.g. page views, clicks, enrollments)
+#' @param experiment_n Number of samples in experiment group
+#' @param zscore z-score corresponding to desired confidence level (default = 1.96 for 95% CL)
+#' 
+#' @return List of sanity check result, observed metric, and confidence interval
 rate_invariant_check <- function(control_x, experiment_x, control_n, experiment_n, zscore = 1.96){
   mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
   sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
@@ -100,7 +123,19 @@ rate_invariant_check <- function(control_x, experiment_x, control_n, experiment_
   ))
 }
 
-### Test hypothesis function
+#' Test hypothesis function
+#' 
+#' @param control_x Number of conversions in control group (e.g. clicks, enrollments, payments)
+#' @param experiment_x Number of conversions in experiment group
+#' @param control_n Number of samples in control group (e.g. page views, clicks, enrollments)
+#' @param experiment_n Number of samples in experiment group
+#' @param diff_prac Practical difference for business
+#' @param z_score z-score corresponding to test level
+#' 
+#' @return List of AB test result, 
+#'         observed difference between control and experiment groups,
+#'         confidence interval,
+#'         and minimum meaningful difference for business  
 AB_test <- function(control_x, experiment_x, control_n, experiment_n, diff_prac, z_score){
   mean_pool <- (control_x+experiment_x)/(control_n+experiment_n)
   sd_pool <- sqrt(mean_pool*(1-mean_pool)*(1/control_n+1/experiment_n))
@@ -138,7 +173,17 @@ AB_test <- function(control_x, experiment_x, control_n, experiment_n, diff_prac,
   ))
 }
 
-### Sign test function
+#' Sign test function
+#' 
+#' @param control_x Number of conversions in control group (e.g. clicks, enrollments, payments)
+#' @param experiment_x Number of conversions in experiment group
+#' @param control_n Number of samples in control group (e.g. page views, clicks, enrollments)
+#' @param experiment_n Number of samples in experiment group
+#' 
+#' @return List of sign test result,
+#'         portion of days that experiment group has higher rate than control group,
+#'         observed value of test statistics,
+#'         and p-value
 sign_test <- function(control_x, experiment_x, control_n, experiment_n){
   control_days <- control_x/control_n
   experiment_days <- experiment_x/experiment_n
