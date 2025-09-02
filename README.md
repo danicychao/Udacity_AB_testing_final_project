@@ -7,7 +7,7 @@ The full detailed analysis is [here](https://github.com/danicychao/Udacity_AB_te
 
 Udacity wants to improve the overall student experience. They come up with a new design, "free trial screener". Before they officially implement the free trial screener in the website, 
 they want to test the free trial screener to see if it can really help them to improve student experience. Therefore, they launch this A/B testing experiment on the free trial screener
-and collect the feedback from students. In this project, I analyse the A/B test results with R and further provide data-driven recommendation.
+and collect the feedback from students. In this project, I analyse the A/B test results with R and further provide data-driven recommendation. <img src=".attachments/RStudio_File.png" style="width:500px;">
 
 Refer to [here](https://docs.google.com/document/u/1/d/1aCquhIqsUApgsxQ8-SQBAigFDcfWVVohLEXcV6jWbdI/pub) for more detail.
 
